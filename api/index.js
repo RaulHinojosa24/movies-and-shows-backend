@@ -11,6 +11,8 @@ const API_URL = 'https://api.themoviedb.org'
 const DEFAULT_LANGUAGE = 'en-US'
 const DEFAULT_REGION = 'US'
 const DEFAULT_INCLUDE_ADULT = false
+const ADULT_ERROR_MESSAGE = { error: 'Access denied. This content is marked as adult content and is not available with your current settings.' }
+const PRIVATE_ERROR_MESSAGE = { error: 'Access denied. This content is private and is not available with your current permissions.' }
 
 const correctLanguage = (URL) => {
   URL.searchParams.append('language', DEFAULT_LANGUAGE)
@@ -19,6 +21,15 @@ const correctRegion = (URL) => {
   URL.searchParams.append('region', DEFAULT_REGION)
   URL.searchParams.append('watch_region', DEFAULT_REGION)
 }
+const validIncludeAdult = (includeAdult) => (
+  includeAdult 
+    ? includeAdult === "true"
+    : DEFAULT_INCLUDE_ADULT
+)
+const adultContentCleaner = (data) => (
+  data
+    .filter(item => !item.adult)
+)
 const getFetch = async (url) => (
   await axios.get(url, {
     method: 'GET',
@@ -85,6 +96,7 @@ router.get('/get-tv-genres', async (req, res) => {
 router.get('/get-now-playing-movies', async (req, res) => {
   const language = req.query.language || DEFAULT_LANGUAGE
   const region = req.query.region || DEFAULT_REGION
+  const includeAdult = validIncludeAdult(req.query.includeAdult)
 
   const url = new URL(`${API_URL}/3/movie/now_playing`)
   url.searchParams.append('language', language)
@@ -92,16 +104,23 @@ router.get('/get-now-playing-movies', async (req, res) => {
 
   try {
     const response = await getFetch(url.href)
+    const results = response?.data?.results
+    
+    if(!includeAdult && results) {
+      const cleanResults = adultContentCleaner(results)
+      response.data.results = cleanResults
+    }
 
     res.json(response.data)
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    res.status(500).json({ error: error?.message })
   }
 })
 router.get('/get-trending-all', async (req, res) => {
   const language = req.query.language || DEFAULT_LANGUAGE
   const page = req.query.page || 1
   const timeWindow = req.query.time_window || 'day'
+  const includeAdult = validIncludeAdult(req.query.includeAdult)
 
   const url = new URL(`${API_URL}/3/trending/all/${timeWindow}`)
   url.searchParams.append('language', language)
@@ -109,6 +128,12 @@ router.get('/get-trending-all', async (req, res) => {
 
   try {
     const response = await getFetch(url.href)
+    const results = response?.data?.results
+    
+    if(!includeAdult && results) {
+      const cleanResults = adultContentCleaner(results)
+      response.data.results = cleanResults
+    }
 
     res.json(response.data)
   } catch (error) {
@@ -118,13 +143,22 @@ router.get('/get-trending-all', async (req, res) => {
 router.get('/get-popular-movies', async (req, res) => {
   const language = req.query.language || DEFAULT_LANGUAGE
   const region = req.query.region || DEFAULT_REGION
+  const page = req.query.page || 1
+  const includeAdult = validIncludeAdult(req.query.includeAdult)
 
   const url = new URL(`${API_URL}/3/movie/popular`)
   url.searchParams.append('language', language)
   url.searchParams.append('region', region)
+  url.searchParams.append('page', page)
 
   try {
     const response = await getFetch(url.href)
+    const results = response?.data?.results
+    
+    if(!includeAdult && results) {
+      const cleanResults = adultContentCleaner(results)
+      response.data.results = cleanResults
+    }
 
     res.json(response.data)
   } catch (error) {
@@ -133,14 +167,21 @@ router.get('/get-popular-movies', async (req, res) => {
 })
 router.get('/get-popular-tvs', async (req, res) => {
   const language = req.query.language || DEFAULT_LANGUAGE
-  // const page = req.query.page || 1
+  const page = req.query.page || 1
+  const includeAdult = validIncludeAdult(req.query.includeAdult)
   
   const url = new URL(`${API_URL}/3/tv/popular`)
   url.searchParams.append('language', language)
-  // url.searchParams.append('page', page)
+  url.searchParams.append('page', page)
 
   try {
     const response = await getFetch(url.href)
+    const results = response?.data?.results
+    
+    if(!includeAdult && results) {
+      const cleanResults = adultContentCleaner(results)
+      response.data.results = cleanResults
+    }
 
     res.json(response.data)
   } catch (error) {
@@ -149,14 +190,21 @@ router.get('/get-popular-tvs', async (req, res) => {
 })
 router.get('/get-popular-people', async (req, res) => {
   const language = req.query.language || DEFAULT_LANGUAGE
-  // const page = req.query.page || 1
+  const page = req.query.page || 1
+  const includeAdult = validIncludeAdult(req.query.includeAdult)
 
   const url = new URL(`${API_URL}/3/person/popular`)
   url.searchParams.append('language', language)
-  // url.searchParams.append('page', page)
+  url.searchParams.append('page', page)
 
   try {
     const response = await getFetch(url.href)
+    const results = response?.data?.results
+    
+    if(!includeAdult && results) {
+      const cleanResults = adultContentCleaner(results)
+      response.data.results = cleanResults
+    }
 
     res.json(response.data)
   } catch (error) {
@@ -167,24 +215,24 @@ router.get('/get-popular-people', async (req, res) => {
 // DISCOVER
 router.get('/discover-movies', async (req, res) => {
   const language = req.query.language || DEFAULT_LANGUAGE
-  const watchRegion = req.query.watch_region || DEFAULT_REGION
-  const includeAdult = req.query.include_adult || DEFAULT_INCLUDE_ADULT
-  const includeVideo = req.query.include_video || true
+  const watchRegion = req.query.region || DEFAULT_REGION
+  const includeAdult = validIncludeAdult(req.query.includeAdult)
+  const includeVideo = req.query.includeVideo || true
   const page = req.query.page || 1
-  const sortBy = `${req.query.sort_by || 'popularity'}.${req.query.sort_direction || 'desc'}`
-  const watchTypes = req.query.watch_types || ''
-  const voteCount = req.query.vote_count || ''
-  const voteMin = req.query.vote_min || ''
-  const voteMax = req.query.vote_max || ''
-  const durationMin = req.query.duration_min || ''
-  const durationMax = req.query.duration_max || ''
-  const fromDate = req.query.from_date || ''
-  const toDate = req.query.to_date || ''
+  const sortBy = `${req.query.sortBy || 'popularity'}.${req.query.sortDirection || 'desc'}`
+  const watchTypes = req.query.watchTypes || ''
+  const voteCount = req.query.voteCount || ''
+  const voteMin = req.query.voteMin || ''
+  const voteMax = req.query.voteMax || ''
+  const durationMin = req.query.durationMin || ''
+  const durationMax = req.query.durationMax || ''
+  const fromDate = req.query.fromDate || ''
+  const toDate = req.query.toDate || ''
   const genres = req.query.genres || ''
   const keywords = req.query.keywords 
     ? req.query.keywords.split('|').map(kw => kw.split('%')[0]).join('|') 
     : ''
-  const watchProviders = req.query.watch_providers || ''
+  const watchProviders = req.query.watchProviders || ''
   
   const url = new URL(`${API_URL}/3/discover/movie`)
   url.searchParams.append('language', language)
@@ -215,23 +263,23 @@ router.get('/discover-movies', async (req, res) => {
 })
 router.get('/discover-tvs', async (req, res) => {
   const language = req.query.language || DEFAULT_LANGUAGE
-  const watchRegion = req.query.watch_region || DEFAULT_REGION
-  const includeAdult = req.query.include_adult || DEFAULT_INCLUDE_ADULT
+  const watchRegion = req.query.region || DEFAULT_REGION
+  const includeAdult = validIncludeAdult(req.query.includeAdult)
   const page = req.query.page || 1
-  const sortBy = `${req.query.sort_by || 'popularity'}.${req.query.sort_direction || 'desc'}`
-  const watchTypes = req.query.watch_types || ''
-  const voteCount = req.query.vote_count || ''
-  const voteMin = req.query.vote_min || ''
-  const voteMax = req.query.vote_max || ''
-  const durationMin = req.query.duration_min || ''
-  const durationMax = req.query.duration_max || ''
-  const fromDate = req.query.from_date || ''
-  const toDate = req.query.to_date || ''
+  const sortBy = `${req.query.sortBy || 'popularity'}.${req.query.sortDirection || 'desc'}`
+  const watchTypes = req.query.watchTypes || ''
+  const voteCount = req.query.voteCount || ''
+  const voteMin = req.query.voteMin || ''
+  const voteMax = req.query.voteMax || ''
+  const durationMin = req.query.durationMin || ''
+  const durationMax = req.query.durationMax || ''
+  const fromDate = req.query.fromDate || ''
+  const toDate = req.query.toDate || ''
   const genres = req.query.genres || ''
   const keywords = req.query.keywords 
     ? req.query.keywords.split('|').map(kw => kw.split('%')[0]).join('|') 
     : ''
-  const watchProviders = req.query.watch_providers || ''
+  const watchProviders = req.query.watchProviders || ''
   
   const url = new URL(`${API_URL}/3/discover/tv`)
   url.searchParams.append('language', language)
@@ -261,7 +309,7 @@ router.get('/discover-tvs', async (req, res) => {
 })
 router.get('/get-movie-providers', async (req, res) => {
   const language = req.query.language || DEFAULT_LANGUAGE
-  const watchRegion = req.query.watch_region || DEFAULT_REGION
+  const watchRegion = req.query.region || DEFAULT_REGION
 
   const url = new URL(`${API_URL}/3/watch/providers/movie`)
   url.searchParams.append('language', language)
@@ -277,7 +325,7 @@ router.get('/get-movie-providers', async (req, res) => {
 })
 router.get('/get-tv-providers', async (req, res) => {
   const language = req.query.language || DEFAULT_LANGUAGE
-  const watchRegion = req.query.watch_region || DEFAULT_REGION
+  const watchRegion = req.query.region || DEFAULT_REGION
   
   const url = new URL(`${API_URL}/3/watch/providers/tv`)
   url.searchParams.append('language', language)
@@ -311,6 +359,7 @@ router.get('/search-keywords', async (req, res) => {
 // DETAILS
 router.get('/get-movie-details', async (req, res) => {
   const language = req.query.language || DEFAULT_LANGUAGE
+  const includeAdult = validIncludeAdult(req.query.includeAdult)
   const id = req.query.id
 
   const url = new URL(`${API_URL}/3/movie/${id}`)
@@ -320,7 +369,13 @@ router.get('/get-movie-details', async (req, res) => {
 
   try {
     const response = await getFetch(url.href)
+    const adultContent = response?.data?.adult
 
+    if (!includeAdult && adultContent) {
+      res.status(403).json(ADULT_ERROR_MESSAGE)
+      return
+    }
+    
     res.json(response.data)
   } catch (error) {
     res.status(500).json({ error: error.message })
@@ -329,6 +384,7 @@ router.get('/get-movie-details', async (req, res) => {
 router.get('/get-tv-details', async (req, res) => {
   const language = req.query.language || DEFAULT_LANGUAGE
   const id = req.query.id
+  const includeAdult = validIncludeAdult(req.query.includeAdult)
 
   const url = new URL(`${API_URL}/3/tv/${id}`)
   url.searchParams.append('language', language)
@@ -337,6 +393,12 @@ router.get('/get-tv-details', async (req, res) => {
 
   try {
     const response = await getFetch(url.href)
+    const adultContent = response?.data?.adult
+
+    if (!includeAdult && adultContent) {
+      res.status(403).json(ADULT_ERROR_MESSAGE)
+      return
+    }
 
     res.json(response.data)
   } catch (error) {
@@ -365,6 +427,7 @@ router.get('/get-tv-season-details', async (req, res) => {
 router.get('/get-person-details', async (req, res) => {
   const language = req.query.language || DEFAULT_LANGUAGE
   const id = req.query.id
+  const includeAdult = validIncludeAdult(req.query.includeAdult)
 
   const url = new URL(`${API_URL}/3/person/${id}`)
   url.searchParams.append('language', language)
@@ -372,8 +435,14 @@ router.get('/get-person-details', async (req, res) => {
 
   try {
     const response = await getFetch(url.href)
+    const combinedCredits = response?.data?.combined_credits
 
-    res.json(response.data)
+    if (!includeAdult) {
+      combinedCredits.cast = adultContentCleaner(combinedCredits?.cast)
+      combinedCredits.crew = adultContentCleaner(combinedCredits?.crew)
+    }
+
+    else res.json(response.data)
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
@@ -381,6 +450,7 @@ router.get('/get-person-details', async (req, res) => {
 router.get('/get-collection-details', async (req, res) => {
   const language = req.query.language || DEFAULT_LANGUAGE
   const id = req.query.id
+  const includeAdult = validIncludeAdult(req.query.includeAdult)
 
   const url = new URL(`${API_URL}/3/collection/${id}`)
   url.searchParams.append('language', language)
@@ -389,6 +459,18 @@ router.get('/get-collection-details', async (req, res) => {
 
   try {
     const response = await getFetch(url.href)
+    const parts = response?.data?.parts
+    const allPartsAreAdult = parts?.every(p => p.adult)
+    
+    if (allPartsAreAdult && !includeAdult) {
+      res.status(403).json(ADULT_ERROR_MESSAGE)
+      return
+    }
+    
+    if (!includeAdult && parts) {
+      const cleanResults = adultContentCleaner(parts)
+      response.data.parts = cleanResults
+    }
 
     res.json(response.data)
   } catch (error) {
@@ -399,6 +481,7 @@ router.get('/get-list-details', async (req, res) => {
   const language = req.query.language || DEFAULT_LANGUAGE
   const id = req.query.id
   const page = req.query.page || 1
+  const includeAdult = validIncludeAdult(req.query.includeAdult)
 
   const url = new URL(`${API_URL}/4/list/${id}`)
   url.searchParams.append('language', language)
@@ -406,6 +489,17 @@ router.get('/get-list-details', async (req, res) => {
 
   try {
     const response = await getFetch(url.href)
+    const isPublic = response?.data?.public
+    const results = response?.data?.results
+
+    if (!isPublic) {
+      res.status(403).json(PRIVATE_ERROR_MESSAGE)
+      return
+    }
+
+    if (!includeAdult && results) {
+      response.data.results = adultContentCleaner(results)
+    }
 
     res.json(response.data)
   } catch (error) {
@@ -416,7 +510,7 @@ router.get('/get-list-details', async (req, res) => {
 // SEARCH
 router.get('/search-movies', async (req, res) => {
   const language = req.query.language || DEFAULT_LANGUAGE
-  const includeAdult = req.query.include_adult || DEFAULT_INCLUDE_ADULT
+  const includeAdult = validIncludeAdult(req.query.includeAdult)
   const page = req.query.page || 1
   const query = req.query.query || ''
   
@@ -436,7 +530,7 @@ router.get('/search-movies', async (req, res) => {
 })
 router.get('/search-tvs', async (req, res) => {
   const language = req.query.language || DEFAULT_LANGUAGE
-  const includeAdult = req.query.include_adult || DEFAULT_INCLUDE_ADULT
+  const includeAdult = validIncludeAdult(req.query.includeAdult)
   const page = req.query.page || 1
   const query = req.query.query || ''
 
@@ -456,7 +550,7 @@ router.get('/search-tvs', async (req, res) => {
 })
 router.get('/search-people', async (req, res) => {
   const language = req.query.language || DEFAULT_LANGUAGE
-  const includeAdult = req.query.include_adult || DEFAULT_INCLUDE_ADULT
+  const includeAdult = validIncludeAdult(req.query.includeAdult)
   const page = req.query.page || 1
   const query = req.query.query || ''
 
