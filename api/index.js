@@ -14,9 +14,9 @@ app.use(cors({
 }));
 
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
+  windowMs: 1 * 60 * 1000, // 1 minuto
   max: 100, // 100 solicitudes por ventana
-  message: { error: 'Too many requests, please try again later.' }
+  message: { error: 'Too many requests, please take a minute before trying again.' }
 });
 app.use(limiter);
 
@@ -50,16 +50,12 @@ const adultContentCleaner = (data) => (
     .filter(item => !item.adult)
 )
 const getFetch = async (url) => {
-  try {
-    return await axios.get(url, {
-      headers: {
-        accept: 'application/json',
-        Authorization: 'Bearer ' + API_TOKEN
-      }
-    });
-  } catch (error) {
-    throw new Error('Failed to fetch data from external API');
-  }
+  return await axios.get(url, {
+    headers: {
+      accept: 'application/json',
+      Authorization: 'Bearer ' + API_TOKEN
+    }
+  });
 };
 
 // GENERAL
@@ -72,12 +68,14 @@ router.get('/get-api-configuration', async (req, res) => {
 
     res.json(response.data)
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    const status = error?.status || 500
+    const message = error?.response?.data?.status_message || error.message
+    
+    res.status(status).json({ error: message })
   }
 })
 router.get('/get-movie-genres', async (req, res) => {
   const language = req.query.language || DEFAULT_LANGUAGE
-
   const url = new URL(`${API_URL}/3/genre/movie/list`)
   url.searchParams.append('language', language)
   
@@ -91,7 +89,10 @@ router.get('/get-movie-genres', async (req, res) => {
     
     res.json(response.data)
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    const status = error?.status || 500
+    const message = error?.response?.data?.status_message || error.message
+    
+    res.status(status).json({ error: message })
   }
 })
 router.get('/get-tv-genres', async (req, res) => {
@@ -110,7 +111,10 @@ router.get('/get-tv-genres', async (req, res) => {
     
     res.json(response.data)
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    const status = error?.status || 500
+    const message = error?.response?.data?.status_message || error.message
+    
+    res.status(status).json({ error: message })
   }
 })
 
@@ -135,7 +139,10 @@ router.get('/get-now-playing-movies', async (req, res) => {
 
     res.json(response.data)
   } catch (error) {
-    res.status(500).json({ error: error?.message })
+    const status = error?.status || 500
+    const message = error?.response?.data?.status_message || error.message
+    
+    res.status(status).json({ error: message })
   }
 })
 router.get('/get-trending-all', async (req, res) => {
@@ -159,7 +166,10 @@ router.get('/get-trending-all', async (req, res) => {
 
     res.json(response.data)
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    const status = error?.status || 500
+    const message = error?.response?.data?.status_message || error.message
+    
+    res.status(status).json({ error: message })
   }
 })
 router.get('/get-popular-movies', async (req, res) => {
@@ -184,7 +194,10 @@ router.get('/get-popular-movies', async (req, res) => {
 
     res.json(response.data)
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    const status = error?.status || 500
+    const message = error?.response?.data?.status_message || error.message
+    
+    res.status(status).json({ error: message })
   }
 })
 router.get('/get-popular-tvs', async (req, res) => {
@@ -207,7 +220,10 @@ router.get('/get-popular-tvs', async (req, res) => {
 
     res.json(response.data)
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    const status = error?.status || 500
+    const message = error?.response?.data?.status_message || error.message
+    
+    res.status(status).json({ error: message })
   }
 })
 router.get('/get-popular-people', async (req, res) => {
@@ -230,7 +246,10 @@ router.get('/get-popular-people', async (req, res) => {
 
     res.json(response.data)
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    const status = error?.status || 500
+    const message = error?.response?.data?.status_message || error.message
+    
+    res.status(status).json({ error: message })
   }
 })
 
@@ -280,7 +299,10 @@ router.get('/discover-movies', async (req, res) => {
 
     res.json(response.data)
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    const status = error?.status || 500
+    const message = error?.response?.data?.status_message || error.message
+    
+    res.status(status).json({ error: message })
   }
 })
 router.get('/discover-tvs', async (req, res) => {
@@ -326,7 +348,10 @@ router.get('/discover-tvs', async (req, res) => {
 
     res.json(response.data)
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    const status = error?.status || 500
+    const message = error?.response?.data?.status_message || error.message
+    
+    res.status(status).json({ error: message })
   }
 })
 router.get('/get-movie-providers', async (req, res) => {
@@ -342,7 +367,10 @@ router.get('/get-movie-providers', async (req, res) => {
 
     res.json(response.data)
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    const status = error?.status || 500
+    const message = error?.response?.data?.status_message || error.message
+    
+    res.status(status).json({ error: message })
   }
 })
 router.get('/get-tv-providers', async (req, res) => {
@@ -358,7 +386,10 @@ router.get('/get-tv-providers', async (req, res) => {
     
     res.json(response.data)
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    const status = error?.status || 500
+    const message = error?.response?.data?.status_message || error.message
+    
+    res.status(status).json({ error: message })
   }
 })
 router.get('/search-keywords', async (req, res) => {
@@ -374,7 +405,10 @@ router.get('/search-keywords', async (req, res) => {
 
     res.json(response.data)
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    const status = error?.status || 500
+    const message = error?.response?.data?.status_message || error.message
+    
+    res.status(status).json({ error: message })
   }
 })
 
@@ -400,7 +434,10 @@ router.get('/get-movie-details', async (req, res) => {
     
     res.json(response.data)
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    const status = error?.status || 500
+    const message = error?.response?.data?.status_message || error.message
+    
+    res.status(status).json({ error: message })
   }
 })
 router.get('/get-tv-details', async (req, res) => {
@@ -424,7 +461,10 @@ router.get('/get-tv-details', async (req, res) => {
 
     res.json(response.data)
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    const status = error?.status || 500
+    const message = error?.response?.data?.status_message || error.message
+    
+    res.status(status).json({ error: message })
   }
 })
 router.get('/get-tv-season-details', async (req, res) => {
@@ -443,7 +483,10 @@ router.get('/get-tv-season-details', async (req, res) => {
 
     res.json(response.data)
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    const status = error?.status || 500
+    const message = error?.response?.data?.status_message || error.message
+    
+    res.status(status).json({ error: message })
   }
 })
 router.get('/get-person-details', async (req, res) => {
@@ -466,7 +509,10 @@ router.get('/get-person-details', async (req, res) => {
 
     res.json(response.data)
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    const status = error?.status || 500
+    const message = error?.response?.data?.status_message || error.message
+    
+    res.status(status).json({ error: message })
   }
 })
 router.get('/get-collection-details', async (req, res) => {
@@ -496,7 +542,10 @@ router.get('/get-collection-details', async (req, res) => {
 
     res.json(response.data)
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    const status = error?.status || 500
+    const message = error?.response?.data?.status_message || error.message
+    
+    res.status(status).json({ error: message })
   }
 })
 router.get('/get-list-details', async (req, res) => {
@@ -525,7 +574,10 @@ router.get('/get-list-details', async (req, res) => {
 
     res.json(response.data)
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    const status = error?.status || 500
+    const message = error?.response?.data?.status_message || error.message
+    
+    res.status(status).json({ error: message })
   }
 })
 
@@ -547,7 +599,10 @@ router.get('/search-movies', async (req, res) => {
 
     res.json(response.data)
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    const status = error?.status || 500
+    const message = error?.response?.data?.status_message || error.message
+    
+    res.status(status).json({ error: message })
   }
 })
 router.get('/search-tvs', async (req, res) => {
@@ -567,7 +622,10 @@ router.get('/search-tvs', async (req, res) => {
 
     res.json(response.data)
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    const status = error?.status || 500
+    const message = error?.response?.data?.status_message || error.message
+    
+    res.status(status).json({ error: message })
   }
 })
 router.get('/search-people', async (req, res) => {
@@ -587,7 +645,10 @@ router.get('/search-people', async (req, res) => {
 
     res.json(response.data)
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    const status = error?.status || 500
+    const message = error?.response?.data?.status_message || error.message
+    
+    res.status(status).json({ error: message })
   }
 })
 
