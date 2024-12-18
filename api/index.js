@@ -2,9 +2,28 @@ require('dotenv').config()
 const express = require('express')
 const cors = require('cors')
 const axios = require('axios')
+const rateLimit = require('express-rate-limit');
+
 const app = express()
 const router = express.Router();
-app.use(cors())
+
+app.use(cors({
+  origin: process.env.ALLOWED_ORIGIN || 'http://localhost:5173',
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 100, // 100 solicitudes por ventana
+  message: { error: 'Too many requests, please try again later.' }
+});
+app.use(limiter);
+
+if (!process.env.TMDB_API_KEY) {
+  console.error('Error: TMDB_API_KEY is not set in environment variables.');
+  process.exit(1);
+}
 
 const API_TOKEN = process.env.TMDB_API_KEY
 const API_URL = 'https://api.themoviedb.org'
@@ -30,15 +49,18 @@ const adultContentCleaner = (data) => (
   data
     .filter(item => !item.adult)
 )
-const getFetch = async (url) => (
-  await axios.get(url, {
-    method: 'GET',
-    headers: {
-      accept: 'application/json',
-      Authorization: 'Bearer ' + API_TOKEN
-    }
-  })
-)
+const getFetch = async (url) => {
+  try {
+    return await axios.get(url, {
+      headers: {
+        accept: 'application/json',
+        Authorization: 'Bearer ' + API_TOKEN
+      }
+    });
+  } catch (error) {
+    throw new Error('Failed to fetch data from external API');
+  }
+};
 
 // GENERAL
 router.get('/get-api-configuration', async (req, res) => {
@@ -572,6 +594,10 @@ router.get('/search-people', async (req, res) => {
 app.use(router)
 app.use((req, res, next) => {
   res.status(403).json({error: 'Request blocked: endpoint not allowed.'});
+});
+app.use((err, req, res, next) => {
+  console.error(err.stack)
+  res.status(500).json({ error: 'Internal Server Error' })
 });
 
 app.listen(3000, () => console.log("Server ready on port 3000."))
