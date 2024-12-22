@@ -13,7 +13,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-app.set('trust proxy', true)
+app.set('trust proxy', 'loopback, linklocal, uniquelocal')
 
 const limiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minuto
