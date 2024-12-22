@@ -13,6 +13,8 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+app.set('trust proxy', true)
+
 const limiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minuto
   max: 100, // 100 solicitudes por ventana
